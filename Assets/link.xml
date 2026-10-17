@@ -1,0 +1,7 @@
+<!-- IL2CPP stripping: keep types serialized by reflection (saves, settings, data packs). -->
+<linker>
+  <assembly fullname="NextXI.Core" preserve="all" />
+  <assembly fullname="Newtonsoft.Json">
+    <type fullname="Newtonsoft.Json.Converters.StringEnumConverter" preserve="all" />
+  </assembly>
+</linker>

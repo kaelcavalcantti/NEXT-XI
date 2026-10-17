@@ -46,6 +46,7 @@ namespace NextXI.Runtime
         {
             S = s;
             _lastScale = s;
+            StyleCache.Clear();
             _display = Resources.Load<Font>("Fonts/BarlowCondensed-Bold");
             _displayItalic = Resources.Load<Font>("Fonts/BarlowCondensed-ExtraBoldItalic");
             _body = Resources.Load<Font>("Fonts/Barlow-Medium");
@@ -66,8 +67,14 @@ namespace NextXI.Runtime
 
         public enum FontKind { Display, DisplayItalic, Body }
 
+        private static readonly System.Collections.Generic.Dictionary<(int, Color32, TextAnchor, FontKind, bool), GUIStyle> StyleCache =
+            new System.Collections.Generic.Dictionary<(int, Color32, TextAnchor, FontKind, bool), GUIStyle>();
+
         public static GUIStyle Style(int size, Color color, TextAnchor anchor = TextAnchor.MiddleLeft, FontKind kind = FontKind.Display, bool wrap = false)
         {
+            var key = (Mathf.Max(8, Mathf.RoundToInt(size * S)), (Color32)color, anchor, kind, wrap);
+            if (StyleCache.TryGetValue(key, out var cached)) return cached;
+            if (StyleCache.Count > 512) StyleCache.Clear();
             var st = new GUIStyle(_label)
             {
                 fontSize = Mathf.Max(8, Mathf.RoundToInt(size * S)),
@@ -76,6 +83,7 @@ namespace NextXI.Runtime
                 font = kind == FontKind.Display ? _display : kind == FontKind.DisplayItalic ? _displayItalic : _body
             };
             st.normal.textColor = color;
+            StyleCache[key] = st;
             return st;
         }
 

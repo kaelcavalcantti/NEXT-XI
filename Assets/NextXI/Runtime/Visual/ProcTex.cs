@@ -161,7 +161,7 @@ namespace NextXI.Runtime
                 for (int i = 0; i < people; i++)
                 {
                     float cx = (i + 0.5f) / people * w + (float)(rng.NextDouble() - 0.5) * 6f;
-                    float r = rng.NextDouble();
+                    float r = (float)rng.NextDouble();
                     Color shirt = r < 0.55 ? homeColor : r < 0.7 ? awayColor : Color.HSVToRGB((float)rng.NextDouble(), 0.4f, 0.4f + (float)rng.NextDouble() * 0.5f);
                     shirt *= 0.75f + (float)rng.NextDouble() * 0.3f;
                     float skinT = (float)rng.NextDouble();

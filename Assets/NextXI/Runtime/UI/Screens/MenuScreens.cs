@@ -115,8 +115,8 @@ namespace NextXI.Runtime
             Ui.Label(new Rect(r.x + 106, r.y + 46, r.width - 120, 44), c.Name.ToUpperInvariant(), 30, Ui.Text, TextAnchor.MiddleLeft, Ui.FontKind.Display, true);
             Ui.Label(new Rect(r.x + 106, r.y + 92, r.width - 120, 26), $"{c.City} · {c.Country}", 16, Ui.Muted, TextAnchor.MiddleLeft, Ui.FontKind.Body);
             Ui.Label(new Rect(r.x + 106, r.y + 118, r.width - 120, 26), $"FORÇA {c.Strength}  ·  {c.Formation}", 18, Ui.Cyan);
-            if (Ui.Button(new Rect(r.x + 20, r.yMax - 64, 80, 50), "◀", false, 26)) index = (index + _clubs.Count - 1) % _clubs.Count;
-            if (Ui.Button(new Rect(r.xMax - 100, r.yMax - 64, 80, 50), "▶", false, 26)) index = (index + 1) % _clubs.Count;
+            if (Ui.Button(new Rect(r.x + 20, r.yMax - 64, 80, 50), "<", false, 26)) index = (index + _clubs.Count - 1) % _clubs.Count;
+            if (Ui.Button(new Rect(r.xMax - 100, r.yMax - 64, 80, 50), ">", false, 26)) index = (index + 1) % _clubs.Count;
         }
 
         private void Start()

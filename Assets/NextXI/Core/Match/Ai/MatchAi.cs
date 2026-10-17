@@ -127,31 +127,55 @@ namespace NextXI.Core.Match
                 return;
             }
 
+            // Earliest reachable point per player, plus the earliest point where the ball is low
+            // enough to be controlled with the feet/chest. Uncontested balls are taken low.
+            var lowTime = new float[2];
+            var lowPoint = new Vec3[2];
+            var lowPlayer = new MatchPlayer[2];
             for (int t = 0; t < 2; t++)
             {
+                lowTime[t] = 99f;
                 foreach (var p in m.Teams[t].Players)
                 {
                     if (!p.IsActive || (p.UserControlled && !m.UserAutopilot)) continue;
                     if (p.IsGoalkeeper && !Pitch.IsInsidePenaltyArea(m.Ball.Position, -m.AttackDir(t))) continue;
                     float headTop = 1.9f + MathUtil.Attr(p.A.Jumping, 0.3f, 0.75f);
                     float react = ReactionDelay(p);
+                    bool foundAny = false;
                     for (int i = 0; i < PathSamples; i++)
                     {
                         float ts = (i + 1) * PathStep;
-                        if (_path[i].Y > headTop && !p.IsGoalkeeper) continue;
+                        bool high = _path[i].Y > headTop && !p.IsGoalkeeper;
+                        if (high) continue;
                         float tr = TimeToReach(p, _path[i]) + react * 0.5f;
                         if (tr <= ts || i == PathSamples - 1)
                         {
                             float score = MathF.Max(tr, ts);
-                            if (score < _chaseTime[t])
+                            if (!foundAny && score < _chaseTime[t])
                             {
                                 _chaseTime[t] = score;
                                 _chaser[t] = p;
                                 _chasePoint[t] = _path[i];
                             }
-                            break;
+                            foundAny = true;
+                            if (_path[i].Y < 1.25f || p.IsGoalkeeper)
+                            {
+                                if (score < lowTime[t]) { lowTime[t] = score; lowPoint[t] = _path[i]; lowPlayer[t] = p; }
+                                break;
+                            }
                         }
                     }
+                }
+            }
+            for (int t = 0; t < 2; t++)
+            {
+                if (lowPlayer[t] == null) continue;
+                bool contested = _chaseTime[1 - t] < lowTime[t] - 0.15f;
+                if (!contested && lowTime[t] - _chaseTime[t] < 1.6f)
+                {
+                    _chaser[t] = lowPlayer[t];
+                    _chasePoint[t] = lowPoint[t];
+                    _chaseTime[t] = lowTime[t];
                 }
             }
 
@@ -166,6 +190,7 @@ namespace NextXI.Core.Match
                     for (int i = 0; i < PathSamples; i++)
                     {
                         float ts = (i + 1) * PathStep;
+                        if (_path[i].Y > 1.25f) continue; // receivers wait for the ball to drop
                         float tr = TimeToReach(r, _path[i]);
                         if (tr <= ts) { rt = ts; rp = _path[i]; break; }
                     }
@@ -270,6 +295,13 @@ namespace NextXI.Core.Match
                 return;
             }
 
+            if (p.Anchor.HasValue)
+            {
+                p.Target = p.Anchor.Value;
+                p.TargetSpeedFactor = 0.6f;
+                p.Intent = "anchor";
+                return;
+            }
             if (p.DecisionTimer > 0f && p.Intent != "chase") return;
             p.DecisionTimer = MathUtil.Lerp(0.2f, 0.32f, m.Rng.Next());
 

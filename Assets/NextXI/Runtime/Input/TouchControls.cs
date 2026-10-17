@@ -250,7 +250,7 @@ namespace NextXI.Runtime
             switch (Context)
             {
                 case UserContext.None: return false;
-                case UserContext.Defending: return b != Btn.Skill && b != Btn.Shield;
+                case UserContext.Defending: return b != Btn.Skill;
                 case UserContext.SetPiece: return b == Btn.Shoot || b == Btn.Pass || b == Btn.Lob || b == Btn.Through;
                 default: return true;
             }
@@ -268,6 +268,7 @@ namespace NextXI.Runtime
                         case Btn.Through: return "PRESSÃO";
                         case Btn.Lob: return "TROCAR";
                         case Btn.Sprint: return "CORRER";
+                        case Btn.Shield: return "CONTER";
                     }
                     break;
                 case UserContext.SupportingAttack:
@@ -344,7 +345,7 @@ namespace NextXI.Runtime
         private static float _last;
         public static void Pulse()
         {
-#if UNITY_ANDROID || UNITY_IOS
+#if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR_CHECK
             if (Time.unscaledTime - _last < 0.15f) return;
             _last = Time.unscaledTime;
             Handheld.Vibrate();

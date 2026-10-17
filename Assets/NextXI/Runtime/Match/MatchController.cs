@@ -190,7 +190,8 @@ namespace NextXI.Runtime
             c.Move = new Vec3(world.x, 0, world.z);
             c.Sprint = f.Sprint;
             c.ShieldHeld = f.ShieldHeld;
-            c.JockeyHeld = f.Sprint == false && Engine.CurrentUserContext == UserContext.Defending && f.Stick.sqrMagnitude > 0.01f && f.ShieldHeld;
+            // The shield button becomes "contain" (jockey) when defending.
+            c.JockeyHeld = Engine.CurrentUserContext == UserContext.Defending && f.ShieldHeld;
             // Edges accumulate until the engine consumes them in a fixed step.
             c.Pass |= f.Pass; c.Through |= f.Through; c.Lob |= f.Lob; c.Shoot |= f.Shoot; c.Skill |= f.Skill; c.Switch |= f.Switch;
             if (f.Pass || f.Through || f.Lob || f.Shoot) c.Power = f.Power;
@@ -329,7 +330,7 @@ namespace NextXI.Runtime
                     case MatchEventType.Substitution:
                     {
                         var on = Engine.FindPlayerAny(e.PlayerId); var off = Engine.FindPlayerAny(e.OtherPlayerId);
-                        if (on != null) { EnsureView(on); Toast($"SUBSTITUIÇÃO: {off?.Profile.ShortName} ⇄ {on.Profile.ShortName}", Ui.Cyan, 2.5f); }
+                        if (on != null) { EnsureView(on); Toast($"SUBSTITUIÇÃO: {off?.Profile.ShortName} > {on.Profile.ShortName}", Ui.Cyan, 2.5f); }
                         break;
                     }
                     case MatchEventType.Injury: Toast("JOGADOR LESIONADO", Ui.Bad, 2f); break;
@@ -449,7 +450,7 @@ namespace NextXI.Runtime
                     break;
                 case State.Replay:
                     Ui.Round(new Rect(24, H - 70, 170, 46), new Color(0, 0, 0, 0.5f));
-                    Ui.Label(new Rect(24, H - 70, 170, 46), "● REPLAY", 26, Ui.Accent, TextAnchor.MiddleCenter, Ui.FontKind.DisplayItalic);
+                    Ui.Label(new Rect(24, H - 70, 170, 46), "REPLAY", 26, Ui.Accent, TextAnchor.MiddleCenter, Ui.FontKind.DisplayItalic);
                     Ui.Label(new Rect(W - 300, H - 64, 280, 40), "TOQUE PARA PULAR", 20, Ui.Muted, TextAnchor.MiddleRight);
                     DrawToasts(W);
                     break;

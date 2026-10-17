@@ -127,6 +127,8 @@ namespace NextXI.Core.Match
         // Control
         public bool UserControlled;
         public bool Starter;
+        /// <summary>Training drills: keeps an AI player around this spot instead of tactical movement.</summary>
+        public Vec3? Anchor;
 
         // AI scratch data
         public Vec3 Target;

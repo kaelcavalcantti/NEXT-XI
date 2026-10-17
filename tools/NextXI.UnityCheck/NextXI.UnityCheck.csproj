@@ -19,7 +19,12 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="UnityEngine.Modules" Version="2021.3.33" />
-    <PackageReference Include="UnityEditor" Version="2019.3.2.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- UnityEditor 2018.1 reference assembly (Unity3D.UnityEditor NuGet); downloaded by tools/NextXI.UnityCheck/fetch_refs.sh -->
+    <Reference Include="UnityEditor">
+      <HintPath>refs/UnityEditor.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using NextXI.Core;
 using NextXI.Core.Persistence;
 using NextXI.Core.Settings;
@@ -145,10 +146,55 @@ namespace NextXI.Runtime
             });
         }
 
+        /// <summary>Starts a playable drill. With a career the result feeds progression.</summary>
+        public void StartTraining(string drillId, NextXI.Core.Career.CareerState career)
+        {
+            career = career ?? CareerSession.Current;
+            RunWithLoading("PREPARANDO O TREINO", () =>
+            {
+                NextXI.Core.Data.PlayerProfile athlete;
+                NextXI.Core.Match.TeamSheet own;
+                var rng = new Rng((ulong)DateTime.UtcNow.Ticks);
+                if (career != null && career.Club != null)
+                {
+                    var c = career.Club;
+                    athlete = career.Athlete;
+                    own = NextXI.Core.Match.TeamSheetBuilder.Build(c.Id, c.Name, c.ShortName, career.World.SquadOf(c.Id).ToList(), c.Formation, c.HomeKit, null, null, athlete.Id);
+                }
+                else
+                {
+                    var d = NextXI.Core.World.DemoClubs.Brazil[0];
+                    own = NextXI.Core.Match.TeamSheetBuilder.Build(d.Id, d.Name, d.Short, NextXI.Core.World.DemoClubs.Squad(d), d.Formation, NextXI.Core.World.DemoClubs.Kit(d));
+                    athlete = drillId == "goalkeeping" ? own.StartingXI[0] : own.StartingXI[own.StartingXI.Count - 1];
+                }
+                var sd = NextXI.Core.World.DemoClubs.Brazil[NextXI.Core.World.DemoClubs.Brazil.Count - 1];
+                var spar = NextXI.Core.Match.TeamSheetBuilder.Build("sparring", "Sparring", "SPR", NextXI.Core.World.DemoClubs.Squad(sd), sd.Formation,
+                    new NextXI.Core.Match.KitColors { Shirt = "#F59E0B", Shorts = "#111827", Socks = "#F59E0B", Number = "#111827", Keeper = "#22D3EE" });
+                SetScreen(null);
+                ShowMenuBackdrop(false);
+                TrainingController.Launch(drillId, athlete, own, spar, rng.NextULong(), score =>
+                {
+                    ShowMenuBackdrop(true);
+                    if (career != null)
+                    {
+                        var r = NextXI.Core.Career.CareerManager.ApplyTraining(career, drillId, score);
+                        CareerSession.Save();
+                        SetScreen(CareerScreens.Hub(CareerHubScreen.Tab.Training, $"Treino: {score * 100:0} pontos, +{r.Xp} XP"));
+                    }
+                    else SetScreen(new TrainingMenuScreen(null));
+                }, () =>
+                {
+                    ShowMenuBackdrop(true);
+                    SetScreen(career != null ? CareerScreens.Hub(CareerHubScreen.Tab.Training, "Treino abandonado (sem efeito).") : (IScreen)new TrainingMenuScreen(null));
+                });
+            });
+        }
+
         private void ShowMenuBackdrop(bool on)
         {
             if (!on)
             {
+                ClearPreview();
                 if (_backdrop != null) Destroy(_backdrop.gameObject);
                 _backdrop = null;
                 AudioService.Instance?.PlayMusic(false);
@@ -162,10 +208,46 @@ namespace NextXI.Runtime
             AudioService.Instance?.PlayMusic(true);
         }
 
+        // ------------------------------------------------------------------ athlete preview (creation / profile)
+
+        private AthleteRig _preview;
+        private float _previewYaw;
+        private string _previewKey;
+
+        /// <summary>Shows a rotating 3D preview of an athlete on the menu backdrop pitch.</summary>
+        public void SetPreviewAthlete(NextXI.Core.Data.PlayerProfile p, NextXI.Core.Match.KitColors kit)
+        {
+            if (_backdrop == null || p == null) return;
+            var a = p.Appearance;
+            string key = $"{p.HeightCm}_{p.WeightKg}_{p.Position}_{p.ShirtNumber}_{a.SkinTone:0.00}_{a.FaceWidth:0.00}_{a.FaceLength:0.00}_{a.Hair}_{a.HairColor:0.00}_{a.Beard}_{a.Build:0.00}_{a.BootStyle}_{a.LongSleeves}_{kit.Shirt}";
+            if (key == _previewKey && _preview != null) return;
+            _previewKey = key;
+            if (_preview != null) Destroy(_preview.gameObject);
+            _preview = AthleteRig.Create(p, AthleteLook.From(p, kit, p.Position == NextXI.Core.Data.Position.GK), _backdrop, true);
+            _preview.transform.position = new Vector3(0, 0, 0);
+        }
+
+        public void ClearPreview()
+        {
+            if (_preview != null) Destroy(_preview.gameObject);
+            _preview = null;
+            _previewKey = null;
+        }
+
         private void Update()
         {
             _time += Time.unscaledDeltaTime;
-            if (_menuCam != null && ActiveMatch == null) _menuCam.UpdateOrbit(_time, Time.unscaledDeltaTime);
+            if (_preview != null && _menuCam != null)
+            {
+                float dt = Time.unscaledDeltaTime;
+                _previewYaw += dt * 18f;
+                _preview.transform.rotation = Quaternion.Euler(0, _previewYaw, 0);
+                _preview.Pose.Update(new AnimInput { Time = _time }, dt);
+                _preview.ApplyPose();
+                // Camera framing the whole body from the front-left, athlete on the right third.
+                _menuCam.UpdateCloseUp(new Vector3(-0.85f, -0.4f, 0), new Vector3(-0.15f, 0, -1f), dt);
+            }
+            else if (_menuCam != null && ActiveMatch == null) _menuCam.UpdateOrbit(_time, Time.unscaledDeltaTime);
             if (_loadingFrames > 0)
             {
                 if (--_loadingFrames == 0)
