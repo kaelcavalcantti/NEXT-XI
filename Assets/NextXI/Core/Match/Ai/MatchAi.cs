@@ -603,7 +603,7 @@ namespace NextXI.Core.Match
         private float LaneSafety(Vec3 from, Vec3 to, int team, float ballSpeed = 14f)
         {
             float d = Vec3.FlatDistance(from, to);
-            float vb = MathF.Max(5f, ballSpeed * 0.8f);
+            float vb = MathF.Max(5f, ballSpeed * 0.76f);
             float safe = 1f;
             foreach (var o in m.Teams[1 - team].Players)
             {
@@ -612,7 +612,14 @@ namespace NextXI.Core.Match
                 Vec3 c = Vec3.Lerp(from, to, t);
                 float perp = Vec3.FlatDistance(c, o.Pos);
                 float ballT = t * d / vb + 0.15f;
-                float oppT = MathF.Max(0f, perp - 0.85f) / (o.MaxSpeed * 0.85f) + 0.28f;
+                float oppT = MathF.Max(0f, perp - 0.92f) / (o.MaxSpeed * 0.85f) + 0.24f;
+                // The ball path runs through the opponent's reach: a body block, no reaction needed.
+                if (perp < 1.05f && t * d > 0.3f)
+                {
+                    float block = MathUtil.Lerp(0.85f, 0.35f, perp / 1.05f);
+                    safe *= 1f - block;
+                    continue;
+                }
                 if (oppT < ballT)
                 {
                     float risk = MathUtil.Clamp01((ballT - oppT) / 0.55f) * MathUtil.Attr(o.A.Interceptions, 0.5f, 0.92f);
@@ -744,6 +751,8 @@ namespace NextXI.Core.Match
                 float progress = (target.X - p.Pos.X) * dir;
                 value += MathUtil.Clamp(progress / 2000f, -0.004f, 0.006f);
                 float u = (success * value - (1f - success) * lossCost) * offsideMult + callBonus * success;
+                // Risky passes are a last resort: composed players rarely force the ball through traffic.
+                if (success < 0.6f && m.NearestOpponentDistance(p) > 2f) u -= (0.6f - success) * MathUtil.Attr(p.A.Composure, 0.02f, 0.06f);
                 if (r.IsGoalkeeper && m.NearestOpponentDistance(p) > 3f) u -= 0.01f;
                 // Avoid pointless sideways passing when the current spot is better.
                 if (value < hereValue * 0.9f && m.NearestOpponentDistance(p) > 4f) u -= 0.003f;

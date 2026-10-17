@@ -78,6 +78,7 @@ namespace NextXI.Runtime
                 m.SetFloat("_Cutoff", 0.5f);
                 m.EnableKeyword("_ALPHATEST_ON");
                 if (doubleSided && m.HasProperty("_Cull")) m.SetFloat("_Cull", 0f);
+                m.renderQueue = (int)RenderQueue.AlphaTest;
             }
             else
             {

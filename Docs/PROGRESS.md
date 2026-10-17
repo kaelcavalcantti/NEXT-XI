@@ -15,7 +15,7 @@ Arquivo de retomada: o que realmente existe, o que falta e qual é o próximo pa
 
 | Item | Evidência |
 |---|---|
-| Motor 11x11 contínuo (física, regras, IA, goleiro, bolas paradas, substituições, cartões, acréscimos) | 41 testes de motor/regras/física; simulações headless (média 2,3–2,5 gols, 10–20 finalizações, ~70% de passes certos) |
+| Motor 11x11 contínuo (física, regras, IA, goleiro, bolas paradas, substituições, cartões, acréscimos) | 43 testes de motor/regras/física/relógio; simulações headless de 12 jogos (média 2,1–2,9 gols, 10–20 finalizações, ~75% de passes certos) |
 | Relógio virtual configurável (3–10 min/tempo) | Testes de relógio e de duração |
 | Controle do usuário contextual (passe, enfiada, cruzamento, chute com potência, drible, proteção, desarme, carrinho, pressão, troca, primeira) | Teste de chute do usuário; compile-check da camada de toque |
 | Carreira completa no núcleo (criação, arquétipos/habilidades, escalação, confiança, objetivos, contratos, propostas, empréstimos, IA de transferências, demissões, seleção, prêmios, temporadas, aposentadoria) | 17 testes de carreira, incluindo temporada inteira e virada |
@@ -42,8 +42,8 @@ Arquivo de retomada: o que realmente existe, o que falta e qual é o próximo pa
 
 ## Problemas conhecidos
 
-1. Taxa de interceptação alta na IA (~30% dos passes) — a IA arrisca passes demais em algumas situações.
-2. Poucas faltas por partida (0–2) — desarmes da IA raramente cometem falta.
+1. Precisão de passe da IA ~74–76% após incluir bloqueio de corpo na avaliação de risco (antes ~68%); ainda abaixo do futebol real em jogos de alto nível.
+2. Faltas ainda abaixo do real (~1–2 por partida de 5 min/tempo) — desarmes da IA raramente cometem falta.
 3. Artefato na abertura do calção quando a coxa flexiona muito (malha do calção e coxa com pesos diferentes).
 4. Glyphs especiais (✓ ★ ♥ setas) podem não existir na fonte; foram trocados por texto, mas outros podem aparecer.
 5. Jogadores do time que ataca às vezes ficam muito longe da linha defensiva (bloco alongado) após recuperações.
@@ -68,5 +68,5 @@ identidade visual por designer, dados reais licenciados. Ver `Docs/ASSETS.md`.
 2. Rodar os testes EditMode na Unity e jogar a primeira partida no Editor; corrigir problemas visuais reais
    (escala de UI, materiais, sombras, números, rede, iluminação noturna).
 3. Gerar o APK, medir FPS/memória em 2 aparelhos e ajustar perfis de qualidade.
-4. Reduzir interceptações da IA e calibrar faltas; adicionar entrada do reserva durante a partida 3D.
+4. Calibrar faltas e variedade tática; adicionar entrada do reserva durante a partida 3D.
 5. Iniciar a substituição de recursos provisórios (atleta e animações) por recursos profissionais.

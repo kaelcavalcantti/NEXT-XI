@@ -340,7 +340,7 @@ namespace NextXI.Core.Match
             if (fromBehind) p -= 0.12f;
             p = MathUtil.Clamp(p, 0.08f, 0.9f);
 
-            float foulP = 0.05f + def.A.Aggression / 1100f - tackleAttr / 900f + (fromBehind ? 0.32f : 0f) + (sliding ? 0.06f : 0f);
+            float foulP = 0.11f + def.A.Aggression / 900f - tackleAttr / 900f + (fromBehind ? 0.32f : 0f) + (sliding ? 0.06f : 0f);
             if (def.Profile.HasTrait(Traits.CleanTackler)) foulP *= 0.5f;
             foulP = MathUtil.Clamp(foulP, 0.01f, 0.7f);
 
@@ -366,7 +366,7 @@ namespace NextXI.Core.Match
                     def.TouchCooldown = 0.25f;
                 }
             }
-            else if (Vec3.FlatDistance(def.Pos, owner.Pos) < 1.1f && Rng.Chance(foulP))
+            else if (Vec3.FlatDistance(def.Pos, owner.Pos) < 1.4f && Rng.Chance(foulP))
             {
                 TackleFoul(def, owner, sliding && fromBehind);
             }
@@ -708,7 +708,17 @@ namespace NextXI.Core.Match
                     p.TouchCooldown = 0.45f;
                     p.Stats.Tackles++; Teams[p.Team].Stats.Tackles++;
                     float steal = 0.22f + MathUtil.Attr(p.A.Interceptions, 0f, 0.3f) - MathUtil.Attr(Owner.A.Dribbling, 0f, 0.18f);
-                    if (!Rng.Chance(steal)) continue;
+                    if (!Rng.Chance(steal))
+                    {
+                        // Clumsy challenge for a ball close to the carrier's body: possible foul.
+                        bool behind = Vec3.Dot(Owner.FacingDir, (p.Pos - Owner.Pos).FlatNormalized) < -0.3f;
+                        if (Vec3.FlatDistance(p.Pos, Owner.Pos) < 1.15f && Rng.Chance((behind ? 0.32f : 0.14f) + p.A.Aggression / 1000f))
+                        {
+                            TackleFoul(p, Owner, behind);
+                            return;
+                        }
+                        continue;
+                    }
                     var victim = Owner;
                     Owner = null;
                     Emit(MatchEventType.TackleWon, p.Team, p, Ball.Position, 0, victim);
