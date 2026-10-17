@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Compile-check of the Unity layer outside the Unity Editor. References Unity reference
+    assemblies from NuGet (UnityEngine 2021.3 modules, UnityEditor 2019.3). This catches C#
+    errors only; it does NOT replace opening/building the project in Unity 6.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0618;CS0414;CS0649;CS0169;CS0067</NoWarn>
+    <DefineConstants>UNITY_ANDROID;ENABLE_LEGACY_INPUT_MANAGER;UNITY_EDITOR_CHECK</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/NextXI/Core/**/*.cs" />
+    <Compile Include="../../Assets/NextXI/Runtime/**/*.cs" />
+    <Compile Include="../../Assets/NextXI/Editor/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="UnityEngine.Modules" Version="2021.3.33" />
+    <PackageReference Include="UnityEditor" Version="2019.3.2.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+</Project>

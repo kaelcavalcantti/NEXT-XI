@@ -13,4 +13,8 @@
   <ItemGroup>
     <Compile Include="../../Assets/NextXI/Core/**/*.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Same version as Unity's com.unity.nuget.newtonsoft-json 3.2.1 -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
 </Project>

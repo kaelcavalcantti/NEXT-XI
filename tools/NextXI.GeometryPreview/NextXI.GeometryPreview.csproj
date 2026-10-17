@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Offline preview of the procedural athlete: compiles the engine-agnostic geometry/pose
+    sources against a tiny UnityEngine math shim, validates mesh winding/weights and exports
+    posed OBJ meshes for rendering (tools/debug/render_obj.py). Debug tool, not shipped.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0618</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="../../Assets/NextXI/Runtime/Visual/MeshBuilder.cs" />
+    <Compile Include="../../Assets/NextXI/Runtime/Visual/MeshKit.cs" />
+    <Compile Include="../../Assets/NextXI/Runtime/Visual/Athlete/AthleteBody.cs" />
+    <Compile Include="../../Assets/NextXI/Runtime/Visual/Athlete/AthletePose.cs" />
+    <Compile Include="../../Assets/NextXI/Runtime/Audio/Synth.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../NextXI.CoreBuild/NextXI.Core.csproj" />
+  </ItemGroup>
+</Project>

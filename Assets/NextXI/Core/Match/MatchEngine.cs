@@ -93,7 +93,7 @@ namespace NextXI.Core.Match
             var team = new MatchTeam(index, sheet);
             for (int i = 0; i < 11; i++)
             {
-                var mp = new MatchPlayer(_nextId++, sheet.StartingXI[i], index);
+                var mp = new MatchPlayer(_nextId++, sheet.StartingXI[i], index) { Starter = true };
                 AssignSlot(team, mp, i);
                 team.Players.Add(mp);
                 Players.Add(mp);
@@ -131,6 +131,20 @@ namespace NextXI.Core.Match
         public MatchPlayer FindPlayer(int id)
         {
             foreach (var p in Players) if (p.Id == id) return p;
+            return null;
+        }
+
+        /// <summary>Finds a player on the pitch, substituted off or on the bench.</summary>
+        public MatchPlayer FindPlayerAny(int id)
+        {
+            if (id < 0) return null;
+            var p = FindPlayer(id);
+            if (p != null) return p;
+            foreach (var t in Teams)
+            {
+                foreach (var q in t.SubbedOff) if (q.Id == id) return q;
+                foreach (var q in t.Bench) if (q.Id == id) return q;
+            }
             return null;
         }
 

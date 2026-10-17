@@ -126,6 +126,7 @@ namespace NextXI.Core.Match
 
         // Control
         public bool UserControlled;
+        public bool Starter;
 
         // AI scratch data
         public Vec3 Target;
