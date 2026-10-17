@@ -142,7 +142,10 @@ namespace NextXI.Core.Match
                 Vec3 p = b.Position;
                 Vec3 v = b.Velocity;
                 float back = pitch.GoalDepth - Radius;
-                if (depthIn > back) { p.X = lineX + side * back; if (v.X * side > 0) v.X = -v.X * NetDamping; v.Z *= 0.5f; v.Y *= 0.5f; }
+                if (depthIn > back) { p.X = lineX + side * back; if (v.X * side > 0) v.X = -v.X * NetDamping * 0.4f; v.Z *= 0.5f; v.Y *= 0.5f; }
+                // The net absorbs energy while the ball is inside the goal.
+                float damp = MathF.Max(0f, 1f - 2.5f * (1f / 120f));
+                v.X *= damp; v.Z *= damp;
                 if (MathF.Abs(p.Z) > hw - Radius) { p.Z = MathF.Sign(p.Z) * (hw - Radius); if (v.Z * p.Z > 0) v.Z = -v.Z * NetDamping; v.X *= 0.6f; }
                 if (p.Y > gh - Radius) { p.Y = gh - Radius; if (v.Y > 0) v.Y = -v.Y * NetDamping; v.X *= 0.6f; }
                 b.Position = p;

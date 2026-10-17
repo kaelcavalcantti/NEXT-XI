@@ -65,6 +65,8 @@ namespace NextXI.Core.Match
         public bool UserAutopilot;
         /// <summary>Lets the AI coach of the user's team substitute the user's athlete.</summary>
         public bool AllowCoachToSubUser = true;
+        /// <summary>Training drills and tests can switch off AI decisions (players keep their targets).</summary>
+        public bool AiEnabled = true;
 
         private float _accumulator;
         private int _kickOffTeamFirstHalf;
@@ -205,6 +207,8 @@ namespace NextXI.Core.Match
         public void Step()
         {
             float dt = Dt;
+            // Substitutions are applied between steps (never while iterating players) at a stoppage.
+            if (_pendingSubs.Count > 0 && Phase != MatchPhase.Playing && Phase != MatchPhase.PreMatch) ApplyPendingSubstitutions();
             BallPrevPos = Ball.Position;
             foreach (var p in Players) p.PrevPos = p.Pos;
             SimTime += dt;
@@ -224,6 +228,9 @@ namespace NextXI.Core.Match
             Clock.Tick(dt);
             if (!announcedBefore && Clock.StoppageAnnounced)
                 Emit(MatchEventType.StoppageAnnounced, -1, null, Vec3.Zero, Clock.StoppageMinutes);
+
+            float vdt = Clock.ToVirtual(dt);
+            foreach (var p in Players) if (p.IsActive) p.Stats.VirtualMinutesPlayed += vdt / 60f;
 
             if (Clock.HalfExpired && CanEndHalfNow())
             {
@@ -255,7 +262,7 @@ namespace NextXI.Core.Match
         private void UpdatePlaying(float dt)
         {
             UpdatePossessionTeam();
-            Ai.Update(dt);
+            if (AiEnabled) Ai.Update(dt);
             if (UserPlayer != null && !UserAutopilot) ApplyUserCommand(dt);
             Command.ClearEdges();
             foreach (var p in Players) if (p.IsActive) UpdateAction(p, dt);
@@ -269,6 +276,18 @@ namespace NextXI.Core.Match
             CheckLooseContacts();
             CheckRules();
             UpdateConditionAndStats(dt);
+        }
+
+        /// <summary>Advertising boards around the pitch stop balls that leave the field of play.</summary>
+        private void ApplyBoards()
+        {
+            float bx = Pitch.HalfLength + 4.5f, bz = Pitch.HalfWidth + 4f;
+            var p = Ball.Position; var v = Ball.Velocity;
+            if (MathF.Abs(p.Z) > bz && p.Y < 1.2f) { p.Z = MathF.Sign(p.Z) * bz; v.Z = -v.Z * 0.3f; v.X *= 0.6f; }
+            if (MathF.Abs(p.X) > bx && p.Y < 1.2f) { p.X = MathF.Sign(p.X) * bx; v.X = -v.X * 0.3f; v.Z *= 0.6f; }
+            // Balls flying into the stands are returned by ball boys (stopped at the boards line).
+            if (MathF.Abs(p.Z) > bz + 2f || MathF.Abs(p.X) > bx + 2f) { p = new Vec3(MathUtil.Clamp(p.X, -bx, bx), BallPhysics.Radius, MathUtil.Clamp(p.Z, -bz, bz)); v = Vec3.Zero; }
+            Ball.Position = p; Ball.Velocity = v;
         }
 
         private void UpdatePossessionTeam()
@@ -287,7 +306,6 @@ namespace NextXI.Core.Match
             foreach (var p in Players)
             {
                 if (!p.IsActive) continue;
-                p.Stats.VirtualMinutesPlayed += vdt / 60f;
                 float speed = p.Speed;
                 // Distance is reported in "virtual" metres so it is comparable across match lengths.
                 p.Stats.DistanceMeters += speed * dt * Clock.Rate * 0.5f;
@@ -339,7 +357,6 @@ namespace NextXI.Core.Match
             _stoppageElapsed = 0f;
             foreach (var p in Players) if (p.Action == PlayerAction.Tackle || p.Action == PlayerAction.Slide) { /* let it finish */ }
             Ai.SetRestartTargets(restart);
-            ApplyPendingSubstitutions();
             Ai.CoachThink();
         }
 
@@ -350,7 +367,7 @@ namespace NextXI.Core.Match
             PhaseTimer -= dt;
             _stoppageElapsed += dt;
             // Ball keeps rolling briefly, then it is placed at the restart spot.
-            if (_stoppageElapsed < 0.9f && CurrentRestart.Type != RestartType.KickOff) BallPhysics.Step(ref Ball, dt, Pitch);
+            if (_stoppageElapsed < 0.9f && CurrentRestart.Type != RestartType.KickOff) { BallPhysics.Step(ref Ball, dt, Pitch); ApplyBoards(); }
             else
             {
                 Ball.Position = CurrentRestart.Spot;
@@ -448,6 +465,7 @@ namespace NextXI.Core.Match
         {
             _goalCelebrationTimer -= dt;
             BallPhysics.Step(ref Ball, dt, Pitch);
+            ApplyBoards();
             foreach (var p in Players) if (p.IsActive) UpdateAction(p, dt);
             Ai.UpdateCelebration(dt);
             foreach (var p in Players) if (p.IsActive) MovePlayer(p, dt);
@@ -455,7 +473,6 @@ namespace NextXI.Core.Match
             if (_goalCelebrationTimer <= 0)
             {
                 foreach (var p in Players) if (p.Action == PlayerAction.Celebrate || p.Action == PlayerAction.Dejected) p.ClearAction();
-                ApplyPendingSubstitutions();
                 BeginKickOff(_concedingTeam, false);
             }
         }
@@ -639,7 +656,6 @@ namespace NextXI.Core.Match
             if (off == null || on == null) return false;
             if (_pendingSubs.Exists(s => s.off == off || s.on == on)) return false;
             _pendingSubs.Add((team, off, on));
-            if (Phase != MatchPhase.Playing) ApplyPendingSubstitutions();
             return true;
         }
 
@@ -727,6 +743,41 @@ namespace NextXI.Core.Match
                     s.Rating = MathUtil.Clamp(r, 3f, 10f);
                 }
             }
+        }
+
+        /// <summary>
+        /// Puts the match straight into open play with the given ball state (training drills, tests,
+        /// scripted scenarios). Clears ownership, restarts and offside state.
+        /// </summary>
+        public void ForceOpenPlay(Vec3 ballPos, Vec3 ballVel, MatchPlayer lastTouch = null)
+        {
+            if (!Clock.IsRunning) Clock.StartHalf(MatchPeriod.FirstHalf);
+            Phase = MatchPhase.Playing;
+            Ball = new BallState { Position = ballPos, Velocity = ballVel };
+            BallPrevPos = ballPos;
+            Owner = null; Holder = null;
+            LastTouch = lastTouch; LastKicker = lastTouch;
+            _pendingPass = false; _activeShot = false;
+            ClearOffside();
+            foreach (var p in Players) { p.ClearAction(); p.Stun = 0f; p.TouchCooldown = 0f; }
+        }
+
+        /// <summary>Gives the ball to a player at their feet (drills, tests).</summary>
+        public void GiveBallTo(MatchPlayer p)
+        {
+            Owner = p; Holder = null; Ball.Held = false;
+            Vec3 f = p.FootPoint();
+            Ball.Position = new Vec3(f.X, BallPhysics.Radius, f.Z);
+            Ball.Velocity = p.Vel;
+            LastTouch = p;
+            p.NextTouchTime = SimTime + 0.2f;
+            PossessionTeam = p.Team;
+        }
+
+        /// <summary>Teleports a player (drills, tests, formation setup).</summary>
+        public void PlacePlayer(MatchPlayer p, Vec3 pos, float facing)
+        {
+            p.Pos = pos; p.PrevPos = pos; p.Vel = Vec3.Zero; p.Facing = facing; p.Target = pos;
         }
 
         /// <summary>Runs the whole match headless as fast as possible (used by sims and tests).</summary>

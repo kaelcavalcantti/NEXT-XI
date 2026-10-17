@@ -6,6 +6,8 @@ namespace NextXI.Core.Match
     internal sealed partial class MatchAi
     {
         private readonly float[] _diveCommittedAt = { -10f, -10f };
+        private readonly float[] _reactionNoise = new float[2];
+        private readonly int[] _shotNoiseVersion = { -1, -1 };
 
         private void KeeperThink(MatchPlayer gk, float dt)
         {
@@ -44,22 +46,31 @@ namespace NextXI.Core.Match
             if (gk.IsBusy) return;
 
             // 1. Shot reaction.
+            if (_shotNoiseVersion[team] != m.TrajectoryVersion)
+            {
+                _shotNoiseVersion[team] = m.TrajectoryVersion;
+                _reactionNoise[team] = MathF.Abs(m.Rng.Gaussian()) * 0.07f;
+            }
             if (m.Owner == null && m.SimTime - _shotSeenTime[team] < 2.5f && m.Ball.Velocity.X * side > 6f)
             {
-                float reaction = MathUtil.Attr(gk.A.GkReflexes, 0.3f, 0.12f) * (IsAiOpponentOfUser(gk) ? m.Settings.OpponentReactionDelay / 0.25f : 1f);
+                float reaction = MathUtil.Attr(gk.A.GkReflexes, 0.3f, 0.12f) * (IsAiOpponentOfUser(gk) ? m.Settings.OpponentReactionDelay / 0.25f : 1f)
+                                 + _reactionNoise[team];
                 if (m.SimTime - _shotSeenTime[team] >= reaction && m.SimTime - _diveCommittedAt[team] > 1.2f)
                 {
                     if (PredictPlaneCrossing(gk.Pos.X, side, out Vec3 c, out float t))
                     {
+                        // Reading the shot is imperfect: fast shots and weaker keepers misjudge the line.
+                        float misread = m.Rng.Gaussian() * 0.35f * MathUtil.Clamp01(m.Ball.Velocity.Length / 25f) * MathUtil.Attr(gk.A.GkPositioning, 1f, 0.35f);
+                        c.Z += misread;
                         float lateral = c.Z - gk.Pos.Z;
-                        float diveMax = MathUtil.Attr(gk.A.GkDiving, 4.2f, 6.8f);
+                        float diveMax = MathUtil.Attr(gk.A.GkDiving, 3.6f, 5.6f);
                         if (gk.Profile.HasTrait(Traits.ShotStopper)) diveMax *= 1.08f;
                         bool reachableStanding = MathF.Abs(lateral) < 0.5f && c.Y < 1.9f;
                         if (!reachableStanding && MathF.Abs(lateral) < 4.8f && t > 0.06f)
                         {
                             // Dive so that the body (arm reach ~0.9 m) arrives on the ball line in time.
                             float travel = MathF.Max(0f, MathF.Abs(lateral) - 0.85f);
-                            float speed = MathF.Min(diveMax, MathF.Max(2.5f, travel / MathF.Max(0.1f, t - 0.04f)));
+                            float speed = MathF.Min(diveMax, MathF.Max(2.5f, travel / MathF.Max(0.1f, t - 0.16f)));
                             float jump = c.Y > 1.4f ? MathUtil.Attr(gk.A.Jumping, 2.3f, 3.4f) : (c.Y > 0.7f ? 1.4f : 0f);
                             Vec3 divePoint = new Vec3(gk.Pos.X - side * 0.25f, 0, gk.Pos.Z + MathF.Sign(lateral) * (travel + 0.15f));
                             m.StartDive(gk, divePoint, speed, 1.0f, jump);

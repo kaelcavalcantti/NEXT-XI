@@ -39,13 +39,16 @@ namespace NextXI.Core.Match
             float T = MathF.Max(0.3f, flightTime);
             Vec3 delta = to - from;
             Vec3 v = new Vec3(delta.X / T, (targetHeight - from.Y + 0.5f * BallPhysics.Gravity * T * T) / T, delta.Z / T);
-            for (int iter = 0; iter < 6; iter++)
+            for (int iter = 0; iter < 10; iter++)
             {
                 Vec3 landing = SimulateUntilHeight(from, v, targetHeight, T * 2.5f, pitch, out float tHit);
                 Vec3 err = (to - landing).FlatXZ;
-                if (err.Length < 0.15f) break;
+                float tErr = T - tHit;
+                if (err.Length < 0.15f && MathF.Abs(tErr) < 0.05f) break;
                 float tc = MathF.Max(0.3f, tHit);
+                // Correct range with horizontal speed and hang time with vertical speed.
                 v = v + err * (1f / tc);
+                v.Y += tErr * BallPhysics.Gravity * 0.5f;
             }
             return v.ClampLength(BallPhysics.MaxSpeed);
         }

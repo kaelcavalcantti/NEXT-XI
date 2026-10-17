@@ -16,7 +16,8 @@ namespace NextXI.Core.Match
 
         public MatchPeriod Period { get; private set; } = MatchPeriod.PreMatch;
         /// <summary>Virtual seconds elapsed inside the current half (0..2700+stoppage).</summary>
-        public float HalfVirtualSeconds { get; private set; }
+        public float HalfVirtualSeconds => (float)_halfVirtual;
+        private double _halfVirtual;
         /// <summary>Stoppage minutes announced for the current half (set at the 45' mark).</summary>
         public int StoppageMinutes { get; private set; }
         public bool StoppageAnnounced { get; private set; }
@@ -72,7 +73,7 @@ namespace NextXI.Core.Match
             if (period != MatchPeriod.FirstHalf && period != MatchPeriod.SecondHalf)
                 throw new ArgumentException("Only halves can be started");
             Period = period;
-            HalfVirtualSeconds = 0;
+            _halfVirtual = 0;
             StoppageMinutes = 0;
             StoppageAnnounced = false;
             PendingStoppageSeconds = 0;
@@ -84,7 +85,7 @@ namespace NextXI.Core.Match
         public bool Tick(float realDt)
         {
             if (!IsRunning) return false;
-            HalfVirtualSeconds += realDt * Rate;
+            _halfVirtual += (double)realDt * Rate;
             if (!StoppageAnnounced && HalfVirtualSeconds >= VirtualHalfSeconds)
             {
                 StoppageAnnounced = true;

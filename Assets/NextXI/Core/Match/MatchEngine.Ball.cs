@@ -463,7 +463,8 @@ namespace NextXI.Core.Match
                 }
                 case PlayerAction.KeeperDive:
                 {
-                    // Explosive lateral push to the dive point, then the body lands.
+                    // Load (push-off) phase, then explosive lateral push to the dive point, then the body lands.
+                    if (p.ActionTime < 0.12f) { p.Vel = Vec3.Zero; return; }
                     Vec3 toDive = (p.Target - p.Pos).FlatXZ;
                     float remaining = toDive.Length;
                     float s = remaining > 0.05f ? MathF.Min(p.ActionSpeed, remaining / dt) : 0f;
@@ -916,6 +917,21 @@ namespace NextXI.Core.Match
                 bool onTarget = MathF.Abs(c.Z) < Pitch.HalfGoalWidth + 0.3f && c.Y < Pitch.GoalHeight + 0.2f;
                 // Balls at the edge of reach are harder to hold.
                 float edge = MathUtil.Clamp01(lateral / reach);
+                // Low balls far from the body and fast balls at full stretch may only be fingertipped.
+                float lowPenalty = c.Y < 0.45f && lateral > 0.6f ? 0.15f : 0f;
+                float touchP = MathUtil.Clamp01(1.25f - edge * 0.55f - lowPenalty - MathF.Max(0f, speed - 22f) * 0.02f) * MathUtil.Attr(gk.A.GkReflexes, 0.8f, 1.05f);
+                if (!Rng.Chance(touchP))
+                {
+                    if (edge > 0.75f && Rng.Chance(0.5f))
+                    {
+                        // Fingertip touch that does not stop the ball.
+                        Ball.Velocity = Ball.Velocity * 0.82f + new Vec3(0, 0, MathF.Sign(c.Z - gk.Pos.Z) * 1.2f);
+                        if (OnTouch(gk, false)) return;
+                        gk.TouchCooldown = 0.6f;
+                    }
+                    else gk.TouchCooldown = 0.6f;
+                    continue;
+                }
                 float catchP = MathUtil.Attr(gk.A.GkHandling, 0.25f, 0.85f) * MathUtil.Clamp(1.35f - speed / 30f, 0.2f, 1f) * (1.15f - 0.75f * edge);
                 if (OnTouch(gk, true)) return;
                 if (Rng.Chance(catchP))
