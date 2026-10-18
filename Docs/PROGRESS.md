@@ -27,6 +27,8 @@ Arquivo de retomada: o que realmente existe, o que falta e qual é o próximo pa
 | Áudio sintetizado (16 sons + música) | Geração offline: sem NaN, picos 0,4–0,95 |
 | Camada Unity (estádio, atleta, animação, câmeras, replays, toque, HUD, menus, carreira, treino, áudio, qualidade, bootstrap, editor/build) | Compila sem erros contra as referências da Unity |
 
+| Prévia jogável no navegador (`Web/preview`): partida 11x11 3D em JavaScript com toque/teclado | Simulações Node (sem NaN, gols e passes plausíveis); Chromium headless sem erros de console; teste de joystick/botões por eventos de ponteiro |
+
 ## Parcial / não verificado
 
 - **Toda a camada Unity está não verificada em execução**: renderização URP, sombras, shaders encontrados em build,
@@ -39,6 +41,8 @@ Arquivo de retomada: o que realmente existe, o que falta e qual é o próximo pa
 - Seleção nacional é simulada (sem partida 3D da seleção).
 - Personalização: sem editor de rosto detalhado (blendshapes), apenas parâmetros globais.
 - Narração: categoria de volume existe, sem conteúdo.
+- Prévia no navegador: IA e regras simplificadas em relação ao motor C# (sem faltas, cartões, impedimento,
+  substituições, fadiga e carreira); não foi testada em celular real.
 
 ## Problemas conhecidos
 
