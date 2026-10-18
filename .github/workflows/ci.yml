@@ -1,0 +1,93 @@
+# NEXT XI — continuous integration
+# 1) core-tests: runs the 87 engine/career tests with .NET (no Unity licence needed).
+# 2) unity-tests + android-build: open the project in Unity 6 (GameCI images), run EditMode tests and build the APK.
+#    These need repository secrets UNITY_LICENSE (contents of your Unity_lic.ulf), UNITY_EMAIL and UNITY_PASSWORD.
+#    Without them the Unity jobs are skipped (see Docs/BUILD_CI.md).
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  core-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Core tests
+        run: dotnet test tools/NextXI.Core.Tests -c Release --logger "trx;LogFileName=core.trx"
+      - name: Unity layer compile-check
+        run: |
+          tools/NextXI.UnityCheck/fetch_refs.sh
+          dotnet build tools/NextXI.UnityCheck -c Release
+      - name: Headless match simulation
+        run: dotnet run --project tools/NextXI.Headless -c Release -- 6 5
+
+  check-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      has-licence: ${{ steps.c.outputs.ok }}
+    steps:
+      - id: c
+        env:
+          L: ${{ secrets.UNITY_LICENSE }}
+        run: echo "ok=$([ -n "$L" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+  unity-tests:
+    needs: [core-tests, check-secrets]
+    if: needs.check-secrets.outputs.has-licence == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-tests-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-tests-
+      - uses: game-ci/unity-test-runner@v4
+        id: tests
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          testMode: editmode
+          artifactsPath: test-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unity-test-results
+          path: ${{ steps.tests.outputs.artifactsPath }}
+
+  android-build:
+    needs: [unity-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          df -h /
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-android-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-android-
+      - uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: Android
+          buildMethod: NextXI.EditorTools.BuildScript.BuildAndroidApk
+          versioning: None
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NEXT-XI-android-apk
+          path: Builds/Android/*.apk
+          if-no-files-found: error
