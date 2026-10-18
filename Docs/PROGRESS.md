@@ -1,7 +1,7 @@
 # Progresso do NEXT XI
 
 Arquivo de retomada: o que realmente existe, o que falta e qual é o próximo passo.
-Última atualização: 2026-10-17.
+Última atualização: 2026-10-18.
 
 ## Ambiente de desenvolvimento usado
 
@@ -33,9 +33,9 @@ Arquivo de retomada: o que realmente existe, o que falta e qual é o próximo pa
   entrada por toque em aparelho, mixagem real de áudio, layout da UI em telas reais, desempenho.
 - Compile-check usa APIs da Unity 2021.3/2018.1; APIs exclusivas do Unity 6 não foram exercitadas
   (só `EditorUserBuildSettings.buildAppBundle` está protegida por `#if`).
-- Goleiro controlado pelo usuário não existe (o treino de goleiro e partidas como goleiro usam a IA com os atributos).
-- Atleta reserva: se não for titular, a partida da carreira é simulada (com chance de entrar) — não há "entrar no meio
-  do jogo 3D" ainda.
+- Goleiro controlado pelo usuário: posicionamento manual, reposição (mão/chute) e carrinho no atacante — coberto por
+  testes do núcleo, mas a sensação de controle no toque não foi avaliada em aparelho.
+- Atleta reserva: pode assistir do banco em 3D (avanço 6x) e entrar no minuto que o técnico decidir; também pode simular.
 - Seleção nacional é simulada (sem partida 3D da seleção).
 - Personalização: sem editor de rosto detalhado (blendshapes), apenas parâmetros globais.
 - Narração: categoria de volume existe, sem conteúdo.
@@ -44,7 +44,7 @@ Arquivo de retomada: o que realmente existe, o que falta e qual é o próximo pa
 
 1. Precisão de passe da IA ~74–76% após incluir bloqueio de corpo na avaliação de risco (antes ~68%); ainda abaixo do futebol real em jogos de alto nível.
 2. Faltas ainda abaixo do real (~1–2 por partida de 5 min/tempo) — desarmes da IA raramente cometem falta.
-3. Artefato na abertura do calção quando a coxa flexiona muito (malha do calção e coxa com pesos diferentes).
+3. Calção: rasgo na flexão da coxa corrigido (vértices inferiores pesados para a coxa); restam pequenos pontos na barra da camisa na pose de chute (render offline).
 4. Glyphs especiais (✓ ★ ♥ setas) podem não existir na fonte; foram trocados por texto, mas outros podem aparecer.
 5. Jogadores do time que ataca às vezes ficam muito longe da linha defensiva (bloco alongado) após recuperações.
 6. Treinos com o atleta em piloto automático pontuam baixo em drible/finalização (a IA chuta cedo) — com jogador humano o esperado é maior, mas não foi medido.
@@ -55,9 +55,14 @@ Arquivo de retomada: o que realmente existe, o que falta e qual é o próximo pa
 Modelos humanoides profissionais, captura de movimento, estádio modelado, áudio de estádio gravado, narração,
 identidade visual por designer, dados reais licenciados. Ver `Docs/ASSETS.md`.
 
+## CI
+
+`.github/workflows/ci.yml`: testes .NET + compile-check sempre; testes Unity e APK Android via GameCI apenas quando os
+segredos `UNITY_LICENSE`/`UNITY_EMAIL`/`UNITY_PASSWORD` existirem (ver `Docs/BUILD_CI.md`). Nenhum APK foi gerado ainda.
+
 ## Testes executados nesta sessão
 
-- `dotnet test` (tools/NextXI.Core.Tests): **87/87 passando**.
+- `dotnet test` (tools/NextXI.Core.Tests): **90/90 passando**.
 - Simulações headless (tools/NextXI.Headless): 10 partidas por rodada de calibração.
 - Compile-check (tools/NextXI.UnityCheck): **sem erros** (Core + Runtime + Editor).
 - Prévia geométrica/sonora (tools/NextXI.GeometryPreview): pesos válidos, áudio finito.
@@ -68,5 +73,5 @@ identidade visual por designer, dados reais licenciados. Ver `Docs/ASSETS.md`.
 2. Rodar os testes EditMode na Unity e jogar a primeira partida no Editor; corrigir problemas visuais reais
    (escala de UI, materiais, sombras, números, rede, iluminação noturna).
 3. Gerar o APK, medir FPS/memória em 2 aparelhos e ajustar perfis de qualidade.
-4. Calibrar faltas e variedade tática; adicionar entrada do reserva durante a partida 3D.
+4. Calibrar faltas e variedade tática.
 5. Iniciar a substituição de recursos provisórios (atleta e animações) por recursos profissionais.

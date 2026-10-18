@@ -149,7 +149,7 @@ namespace NextXI.Runtime
         /// Emits a tube through the rings. `side` gives the lateral axis (X); the front direction
         /// is cross(tangent, side). Ends are closed by shrinking radii in the profile itself.
         /// </summary>
-        private void Tube(AthleteMaterial mat, List<Ring> rings, Vector3 side, float vScale = 1f)
+        private void Tube(AthleteMaterial mat, List<Ring> rings, Vector3 side, float vScale = 1f, Func<Vector3, BoneWeight, BoneWeight> reweight = null)
         {
             var b = Mesh;
             int sub = (int)mat;
@@ -172,7 +172,8 @@ namespace NextXI.Runtime
                     Vector3 p = r.Center + a * (r.Rx * c) + f * (rz * s);
                     Vector3 n = (a * (c / Mathf.Max(1e-4f, r.Rx)) + f * (s / Mathf.Max(1e-4f, rz))).normalized;
                     int vi = b.Add(p, n, new Vector2(k / (float)Seg, vAcc * vScale));
-                    b.W[vi] = Weight(r.BoneA, r.BoneB, r.WeightB);
+                    var bw = Weight(r.BoneA, r.BoneB, r.WeightB);
+                    b.W[vi] = reweight != null ? reweight(p, bw) : bw;
                 }
             }
             for (int j = 0; j < rings.Count - 1; j++)
@@ -334,7 +335,7 @@ namespace NextXI.Runtime
                 // Shorts leg opening (looser than the thigh) - part of the shorts submesh.
                 var shortsLeg = new List<Ring>
                 {
-                    new Ring { Center = hip + new Vector3(side * 0.006f, 0.04f * _s, 0), Rx = 0.1f * w, RzFront = 0.1f * w, RzBack = 0.112f * w, BoneA = hips, BoneB = th, WeightB = 0.3f },
+                    new Ring { Center = hip + new Vector3(side * 0.006f, 0.04f * _s, 0), Rx = 0.1f * w, RzFront = 0.1f * w, RzBack = 0.112f * w, BoneA = hips, BoneB = th, WeightB = 0.5f },
                     new Ring { Center = Vector3.Lerp(hip, knee, 0.25f) + new Vector3(side * 0.004f, 0, 0), Rx = 0.095f * w, RzFront = 0.097f * w, RzBack = 0.103f * w, BoneA = hips, BoneB = th, WeightB = 0.75f },
                     new Ring { Center = Vector3.Lerp(hip, knee, 0.42f) + new Vector3(side * 0.003f, 0, 0), Rx = 0.09f * w, RzFront = 0.093f * w, RzBack = 0.096f * w, BoneA = th, BoneB = th },
                     new Ring { Center = Vector3.Lerp(hip, knee, 0.43f), Rx = 0.075f * w, RzFront = 0.078f * w, RzBack = 0.075f * w, BoneA = th, BoneB = th },
@@ -406,7 +407,17 @@ namespace NextXI.Runtime
                 float y = shorts[i, 0];
                 sRings.Add(new Ring { Center = S(0, y, 0.005f) / 1f, Rx = shorts[i, 1] * _s * w, RzFront = shorts[i, 2] * _s * w, RzBack = shorts[i, 3] * _s * w, BoneA = hips, BoneB = hips });
             }
-            Tube(AthleteMaterial.Shorts, sRings, Vector3.right);
+            // Lower pelvis follows the thighs on each side so the shorts do not tear when a leg flexes.
+            int lth = (int)AthleteBone.LThigh, rth = (int)AthleteBone.RThigh;
+            float hipY = BindPositions[lth].y;
+            Tube(AthleteMaterial.Shorts, sRings, Vector3.right, 1f, (pos, bw) =>
+            {
+                float low = Mathf.Clamp01((hipY + 0.05f * _s - pos.y) / (0.12f * _s));
+                float lateral = Mathf.Clamp01((Mathf.Abs(pos.x) - 0.02f * _s) / (0.1f * _s));
+                float wt = low * lateral * 0.55f;
+                if (wt <= 0.01f) return bw;
+                return Weight(hips, pos.x < 0 ? lth : rth, wt);
+            });
 
             // Shirt from the hem (over the shorts) to the collar.
             float[,] shirt =
