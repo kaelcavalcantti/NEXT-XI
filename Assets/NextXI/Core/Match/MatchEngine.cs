@@ -65,6 +65,10 @@ namespace NextXI.Core.Match
         public bool UserAutopilot;
         /// <summary>Lets the AI coach of the user's team substitute the user's athlete.</summary>
         public bool AllowCoachToSubUser = true;
+        /// <summary>Virtual minute at which the coach brings the user's benched athlete on (-1 = never).</summary>
+        public float UserSubInMinute = -1f;
+        /// <summary>True while the user's athlete waits on the bench.</summary>
+        public bool UserOnBench => UserPlayer != null && !UserPlayer.OnPitch && !UserPlayer.SentOff && Teams[UserPlayer.Team].Bench.Contains(UserPlayer);
         /// <summary>Training drills and tests can switch off AI decisions (players keep their targets).</summary>
         public bool AiEnabled = true;
 

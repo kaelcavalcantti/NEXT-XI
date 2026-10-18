@@ -56,7 +56,9 @@ namespace NextXI.Core.Match
             foreach (var p in m.Players)
             {
                 if (!p.IsActive) continue;
-                if (p.UserControlled && !m.UserAutopilot) continue;
+                // A user-controlled keeper keeps the keeper AI as assistance (positioning, dives, claims);
+                // the user's stick and buttons override it afterwards in ApplyUserCommand.
+                if (p.UserControlled && !m.UserAutopilot && !p.IsGoalkeeper) continue;
                 p.DecisionTimer -= dt;
                 if (p.RunTimer > 0) p.RunTimer -= dt;
                 p.WantsHeader = false;
@@ -137,7 +139,7 @@ namespace NextXI.Core.Match
                 lowTime[t] = 99f;
                 foreach (var p in m.Teams[t].Players)
                 {
-                    if (!p.IsActive || (p.UserControlled && !m.UserAutopilot)) continue;
+                    if (!p.IsActive || (p.UserControlled && !m.UserAutopilot && !p.IsGoalkeeper)) continue;
                     if (p.IsGoalkeeper && !Pitch.IsInsidePenaltyArea(m.Ball.Position, -m.AttackDir(t))) continue;
                     float headTop = 1.9f + MathUtil.Attr(p.A.Jumping, 0.3f, 0.75f);
                     float react = ReactionDelay(p);

@@ -173,8 +173,9 @@ namespace NextXI.Runtime
                 }
                 else
                 {
-                    Ui.Label(new Rect(x, y + 36, w, 44), _plan.Unavailable ? "A partida será simulada sem você." : $"A partida será simulada; chance de entrar: {CareerManager.BenchChance(s) * 100:0}%.", 17, Ui.Muted, TextAnchor.UpperLeft, Ui.FontKind.Body, true);
-                    if (Ui.Button(new Rect(x, y + 84, 320, 64), "ACOMPANHAR (SIMULAR)", true, 22)) Simulate();
+                    Ui.Label(new Rect(x, y + 36, w, 44), _plan.Unavailable ? "A partida será simulada sem você." : $"Você começa no banco; chance de entrar: {CareerManager.BenchChance(s) * 100:0}%. Simule ou acompanhe em 3D.", 17, Ui.Muted, TextAnchor.UpperLeft, Ui.FontKind.Body, true);
+                    if (Ui.Button(new Rect(x, y + 84, 300, 64), "SIMULAR", false, 22)) Simulate();
+                    if (_plan.OnBench && Ui.Button(new Rect(x + 320, y + 84, 300, 64), "VER DO BANCO (3D)", true, 22)) CareerSession.PlayMatch(_plan, false, true);
                 }
             }
             DrawObjectives(new Rect(x, left.yMax - 210, w, 196));

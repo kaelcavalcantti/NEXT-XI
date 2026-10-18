@@ -41,10 +41,10 @@ namespace NextXI.Runtime
         public static void Close() { Save(); Current = null; }
 
         /// <summary>Plays the athlete's next match in 3D (or simulates it).</summary>
-        public static void PlayMatch(MatchPlan plan, bool simulate)
+        public static void PlayMatch(MatchPlan plan, bool simulate, bool watchFromBench = false)
         {
             var s = Current;
-            if (simulate || plan.Unavailable)
+            if (simulate || plan.Unavailable || plan.OnBench && !watchFromBench)
             {
                 CareerManager.SimulateUserMatch(s, plan);
                 Save();
@@ -62,6 +62,10 @@ namespace NextXI.Runtime
                 Settings = settings,
                 UserTeam = plan.UserTeam,
                 LockedPlayerProfileId = s.AthleteId,
+                // The coach decides now whether (and when) the benched athlete comes on.
+                UserSubInMinute = plan.OnBench
+                    ? (CareerManager.RngFor(s, 1201).Chance(CareerManager.BenchChance(s)) ? CareerManager.RngFor(s, 1202).Range(55f, 80f) : -1f)
+                    : -1f,
                 Competition = plan.Competition.Name.ToUpperInvariant(),
                 StadiumName = home.Stadium.ToUpperInvariant(),
                 Night = plan.Fixture.Day % 3 != 0,

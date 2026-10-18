@@ -392,6 +392,25 @@ namespace NextXI.Core.Match
         public void CoachThink()
         {
             float minute = m.Clock.TotalVirtualSeconds / 60f;
+            // The user's athlete starting on the bench comes on at the coach's chosen minute.
+            var u = m.UserPlayer;
+            if (u != null && !u.OnPitch && !u.SentOff && m.UserSubInMinute >= 0f && minute >= m.UserSubInMinute)
+            {
+                var team = m.Teams[u.Team];
+                int bench = team.Bench.IndexOf(u);
+                if (bench >= 0 && team.SubstitutionsUsed < m.Settings.MaxSubstitutions)
+                {
+                    var group = PositionInfo.Group(u.Profile.Position);
+                    MatchPlayer off = null; float worst = float.MaxValue;
+                    foreach (var p in team.Players)
+                    {
+                        if (!p.IsActive || p.IsGoalkeeper != (group == PositionGroup.Goalkeeper)) continue;
+                        float score = (PositionInfo.Group(p.Position) == group ? 0f : 20f) + p.Stamina * 10f + p.Stats.Rating;
+                        if (score < worst) { worst = score; off = p; }
+                    }
+                    if (off != null && m.RequestSubstitution(u.Team, off.Id, bench)) m.UserSubInMinute = -1f;
+                }
+            }
             for (int t = 0; t < 2; t++)
             {
                 var team = m.Teams[t];

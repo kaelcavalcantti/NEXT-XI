@@ -21,7 +21,8 @@ namespace NextXI.Core.Match
                 gk.Target = gk.Pos;
                 gk.TargetSpeedFactor = 0.3f;
                 gk.Facing = MathUtil.MoveTowardsAngle(gk.Facing, (side > 0 ? MathUtil.Pi : 0f), 6f * dt);
-                if (gk.HoldTimer <= 0f && gk.Action == PlayerAction.None) Distribute(gk);
+                // A user keeper decides the distribution; the AI only steps in if he waits too long.
+                if (gk.HoldTimer <= (gk.UserControlled && !m.UserAutopilot ? -4f : 0f) && gk.Action == PlayerAction.None) Distribute(gk);
                 return;
             }
 
@@ -30,6 +31,7 @@ namespace NextXI.Core.Match
                 // Ball at the keeper's feet (back pass or goal kick): play it simply and quickly.
                 if (gk.IsBusy) return;
                 gk.HoldTimer += dt;
+                if (gk.UserControlled && !m.UserAutopilot && gk.HoldTimer < 4f) return; // user plays it
                 if (gk.HoldTimer < 0.5f && m.NearestOpponentDistance(gk) > 6f) { gk.Target = gk.Pos; return; }
                 Option best = new Option { Utility = float.MinValue };
                 EvaluatePasses(gk, ref best, 0.1f);

@@ -47,6 +47,7 @@ namespace NextXI.Core.Match
                 }
             }
             if (!u.IsActive) return;
+            if (u.IsGoalkeeper) { ApplyUserKeeper(u); return; }
 
             // ---- movement
             Vec3 move = Command.Move.FlatXZ.ClampLength(1f);
@@ -98,6 +99,39 @@ namespace NextXI.Core.Match
                     else if (Command.Through) RequestTeammatePress();
                     break;
             }
+        }
+
+        /// <summary>
+        /// Assisted goalkeeper: the keeper AI positions, dives and claims; the stick moves the keeper
+        /// (e.g. to come off the line) when no shot is travelling, and the buttons distribute the ball.
+        /// </summary>
+        private void ApplyUserKeeper(MatchPlayer u)
+        {
+            Vec3 move = Command.Move.FlatXZ.ClampLength(1f);
+            float mag = move.Length;
+            Vec3 aim = mag > 0.2f ? move / mag : new Vec3(AttackDir(u.Team), 0, 0);
+            if (Holder == u && u.Action == PlayerAction.None || u.Action == PlayerAction.KeeperCatch && Holder == u)
+            {
+                if (Command.Pass)
+                {
+                    var r = ChooseUserReceiver(u, aim, 40f);
+                    KeeperRelease(u, new PendingKick { Kind = KickKind.KeeperThrow, Target = r?.Pos ?? u.Pos + aim * 15f, ReceiverId = r?.Id ?? -1, Power = 0.6f, ErrorScale = 0.9f, UserInitiated = true });
+                }
+                else if (Command.Shoot || Command.Lob || Command.Through)
+                {
+                    var r = ChooseUserReceiver(u, aim, 75f, true);
+                    KeeperRelease(u, new PendingKick { Kind = KickKind.KeeperKick, Target = r?.Pos ?? u.Pos + aim * 50f, ReceiverId = r?.Id ?? -1, Power = 1f, ErrorScale = 1f, UserInitiated = true });
+                }
+                return;
+            }
+            if (Owner == u) { UserAttack(u, aim, mag > 0.2f); if (mag > 0.08f) { u.Target = u.Pos + move.FlatNormalized * 3f; u.TargetSpeedFactor = mag * 0.7f; u.DribbleDir = move.FlatNormalized; } return; }
+            if (u.IsBusy || ShotInFlight) return;
+            if (mag > 0.2f)
+            {
+                u.Target = u.Pos + move / mag * 3f;
+                u.TargetSpeedFactor = mag * (Command.Sprint ? 1f : 0.7f);
+            }
+            if (Command.Shoot && Owner != null && Owner.Team != u.Team && Vec3.FlatDistance(Owner.Pos, u.Pos) < 4f) StartSlide(u, (Ball.Position - u.Pos).FlatNormalized);
         }
 
         private void QueueFirstTime(MatchPlayer u, Vec3 aim, bool aimed)

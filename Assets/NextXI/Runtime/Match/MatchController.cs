@@ -18,6 +18,8 @@ namespace NextXI.Runtime
         public string StadiumName = "ARENA NEXT";
         public bool Night = true;
         public bool ShowIntro = true;
+        /// <summary>Career: virtual minute the coach brings the benched athlete on (-1 = stays on the bench).</summary>
+        public float UserSubInMinute = -1f;
         public Action<MatchReport> OnFinished;
         public Action OnQuit;
     }
@@ -53,6 +55,7 @@ namespace NextXI.Runtime
         private int _settingsTab;
         private GameSettings Settings => GameApp.Instance.Settings;
         private Transform _root;
+        private bool _wasOnBench;
         private MatchReport _report;
 
         public static MatchController Launch(MatchSetup setup)
@@ -70,6 +73,8 @@ namespace NextXI.Runtime
             Engine = new MatchEngine(setup.Home, setup.Away, setup.Settings);
             Engine.HoldAtHalfTime = true;
             if (setup.UserTeam >= 0) Engine.SetUserTeam(setup.UserTeam, setup.LockedPlayerProfileId);
+            Engine.UserSubInMinute = setup.UserSubInMinute;
+            _wasOnBench = Engine.UserOnBench;
 
             var g = Settings.Graphics;
             _stadium = new StadiumBuilder();
@@ -148,7 +153,11 @@ namespace NextXI.Runtime
                     if (input.Pause) { Pause(); break; }
                     if (input.CameraCycle) CycleCamera();
                     FeedCommand(input);
-                    Engine.Advance(dt);
+                    // While the athlete waits on the bench the match runs faster (watching from the dugout).
+                    bool bench = Engine.UserOnBench;
+                    Engine.Advance(bench ? dt * 6f : dt);
+                    if (_wasOnBench && !bench) { Toast("VOCÊ ENTROU EM CAMPO!", Ui.Accent, 2.5f); _cam.Snap(); }
+                    _wasOnBench = bench;
                     HandleEvents();
                     _replay.Record(Engine, _time, dt);
                     RenderEngineState(dt);
@@ -444,6 +453,14 @@ namespace NextXI.Runtime
                 case State.Playing:
                     DrawToasts(W);
                     DrawUserInfo(W, H);
+                    if (Engine.UserOnBench)
+                    {
+                        var br = new Rect(W * 0.5f - 330, H - 120, 660, 96);
+                        Ui.Round(br, new Color(0.03f, 0.05f, 0.12f, 0.88f));
+                        Ui.Label(new Rect(br.x, br.y + 6, br.width, 40), "NO BANCO DE RESERVAS", 30, Ui.Gold, TextAnchor.MiddleCenter, Ui.FontKind.DisplayItalic);
+                        Ui.Label(new Rect(br.x, br.y + 44, br.width - 230, 40), "O técnico decide quando você entra (jogo acelerado).", 17, Ui.Muted, TextAnchor.MiddleCenter, Ui.FontKind.Body);
+                        if (Ui.Button(new Rect(br.xMax - 220, br.y + 46, 206, 42), "SIMULAR O RESTO", false, 16)) LeaveMatch(true);
+                    }
                     _controls.Draw();
                     if (Engine.Phase == MatchPhase.SetPiece && Engine.CurrentUserContext == UserContext.SetPiece)
                         Ui.Label(new Rect(0, H * 0.2f, W, 40), SetPieceHint(), 24, Ui.Text, TextAnchor.MiddleCenter);
