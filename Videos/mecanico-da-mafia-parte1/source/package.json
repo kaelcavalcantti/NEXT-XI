@@ -1,0 +1,17 @@
+{
+  "name": "prod",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fontsource/anton": "^5.0.18",
+    "@fontsource/bebas-neue": "^5.0.18",
+    "three": "^0.170.0"
+  }
+}
