@@ -346,9 +346,10 @@ const childRoom = {
           const n = new THREE.Vector3(0, 0, 1).applyQuaternion(letter.quaternion).normalize();
           const d = C.id === 'letter1' ? lerp(0.42, 0.36, C.u) : lerp(0.3, 0.26, C.u);
           const up = new THREE.Vector3(0, 1, 0).applyQuaternion(letter.quaternion);
-          const focusPt = lp.clone().addScaledVector(up, C.id === 'letter1' ? 0.05 : -0.03);
+          const focusPt = lp.clone().addScaledVector(up, C.id === 'letter1' ? 0.05 : -0.005);
           placeCamera(cam, focusPt.clone().addScaledVector(n, d).toArray(), focusPt.toArray(), { shake: 0.003, t, fov: 34 }); ap = 3; focus = d;
-          W.flash.intensity = 0.9; W.flash.angle = 0.7; W.flashCone.material.uniforms.intensity.value = 0;
+          W.flash.intensity = 0; W.flashCone.material.uniforms.intensity.value = 0; g.phone.visible = false;
+          W.bounce.position.copy(lp).addScaledVector(n, 0.55).add(V(0, 0.25, 0)); W.bounce.intensity = 0.5; W.bounce.distance = 3; W.bounce.color.set(0xffe2c0);
         }
         else if (C.id === 'face1' || C.id === 'face2') { placeCamera(cam, hp.clone().add(V(-0.62, -0.06, 0.12)).toArray(), hp.toArray(), { shake: 0.004, t, fov: 32 }); ap = 5; focus = 0.62; }
         else camPath(cam, C.lt, [[0, [-11.0, UP + 0.7, -5.6], hp.toArray()], [3.5, [-11.1, UP + 0.75, -5.75], hp.toArray()]], { shake: 0.005, fov: 40 });

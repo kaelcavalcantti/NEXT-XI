@@ -85,7 +85,7 @@ export function updateInterior(W, t, { flashOn = 1, lightningTimes = EVENTS.ligh
   // rebatimento perto do rosto
   const head = new THREE.Vector3(); g.j.head.getWorldPosition(head);
   W.bounce.position.copy(head).addScaledVector(fwd, 0.6).add(new THREE.Vector3(0, -0.2, 0));
-  W.bounce.intensity = 0.35 * flashOn;
+  W.bounce.intensity = 0.35 * flashOn; W.bounce.distance = 2.2; W.bounce.color.set(0xc8b8a8);
   return L;
 }
 

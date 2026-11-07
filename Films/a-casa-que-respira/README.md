@@ -6,7 +6,7 @@ efeitos sonoros, trilha e mixagem. Nenhum asset de imagem ou som foi baixado de 
 tudo é gerado por algoritmos neste diretório. As únicas peças externas são a biblioteca 3D, as
 fontes tipográficas e o modelo neural de voz (licenças abaixo).
 
-**Vídeo final:** `output/A_Casa_que_Respira_Parte1.mp4` (H.264 + AAC 48 kHz)
+**Vídeo final:** `output/A_Casa_que_Respira_Parte1.mp4` — 6:08, 1920×1080, 24 fps, H.264 + AAC 256 kbps 48 kHz estéreo, −16 LUFS, 68 MB
 
 ## Como produzir de novo
 
@@ -32,7 +32,7 @@ Etapas individuais (úteis para iterar):
 Requisitos: Node 18+, Python 3.10+, `ffmpeg` com `libx264` e `rubberband`, e o Chromium do
 Playwright (`npx playwright install chromium` se ainda não houver). O render usa WebGL por software
 (SwiftShader), então roda em qualquer máquina sem GPU: ~1,3 s por quadro com 2 workers em 4 núcleos
-(≈ 3–4 h para os 8 832 quadros).
+(≈ 3–4 h para os 8 832 quadros). O MP4 é codificado com CRF 25 e uma redução leve do grão (`hqdn3d`) para caber em ~70 MB; use `CRF=19 bash tools/mux.sh` para uma versão de arquivo (~1,4 GB).
 
 ## Tecnologia escolhida (e por quê)
 

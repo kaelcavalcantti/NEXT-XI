@@ -309,7 +309,7 @@ export function letterCanvas(lines, revealed = 1) {
   x.fillStyle = 'rgba(70,50,30,0.15)'; x.beginPath(); x.ellipse(600, 860, 90, 60, 0.3, 0, Math.PI * 2); x.fill();
   x.fillStyle = '#1e1a2a'; x.font = '44px Hand'; x.textBaseline = 'alphabetic';
   let y = 120;
-  x.font = '40px Hand'; x.fillText('Pedra Funda, 3 de junho de 1994', 300, 80);
+  x.font = '38px Hand'; x.fillText('Pedra Funda, 3 de junho de 1994', 200, 80);
   x.font = '46px Hand';
   const total = lines.join(' ').length; let shown = 0;
   for (const ln of lines) {
